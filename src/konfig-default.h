@@ -5,11 +5,15 @@
 
 #define WEB_SERVER_PASSWORD ""
 
-#define PIN_OUT1 15
-#define PIN_OUT2 13
+#define PIN_OUT1 13
+#define PIN_OUT2 15
 #define PIN_SDA 4
 #define PIN_SCL 5
 
+#define DEBUG
+
+#define RUN_INTERVAL 1000
+#define BAUD_RATE 115200
 
 
 #define PEMANAS PIN_OUT1
@@ -23,4 +27,3 @@
 #define NYALA HIGH
 #define MATI LOW
 #endif
-

@@ -22,38 +22,7 @@ AsyncWebServer server(80);
 
 bool shtc3_stat = true;
 
-void i2c_scanner(){
-  byte error, address;
-  int nDevices;
-  Serial.println("Scanning i2c devices...");
-  nDevices = 0;
-  for(address = 1; address < 127; address++ ) {
-    Wire.beginTransmission(address);
-    // Serial.println(address);
-    error = Wire.endTransmission();
-    if (error == 0) {
-      Serial.print("I2C device found at address 0x");
-      if (address<16) {
-        Serial.print("0");
-      }
-      Serial.println(address,HEX);
-      nDevices++;
-    }
-    else if (error==4) {
-      Serial.print("Unknow error at address 0x");
-      if (address<16) {
-        Serial.print("0");
-      }
-      Serial.println(address,HEX);
-    }    
-  }
-  if (nDevices == 0) {
-    Serial.println("No I2C devices found\n");
-  }
-  else {
-    Serial.println("done\n");
-  }
-}
+
 
 void read_sensors(){
   // read the humidity and temperature from
@@ -61,33 +30,14 @@ void read_sensors(){
   shtc3.getEvent(&hummidity, &temp);
   curentHummidity = hummidity.relative_humidity;
   curentTemperature = temp.temperature;
-  status_kipas = (digitalRead(KIPAS) == NYALA)? true:false;
-  status_pemanas = (digitalRead(PEMANAS) == NYALA)? true:false;
-
+  // status_kipas = (digitalRead(KIPAS) == NYALA)? true:false;
+  // status_pemanas = (digitalRead(PEMANAS) == NYALA)? true:false;
+#ifdef DEBUG
   Serial.print("Temperatur : ");
   Serial.println(temp.temperature);
   Serial.print("Kelembapan : ");
   Serial.println(hummidity.relative_humidity);
-}
-
-void thermostat(){
-  read_sensors();
-
-  if(setTemperature == 0){
-    if(status_pemanas){
-      Serial.println("Mematikan pemanas");
-      digitalWrite(PEMANAS, NYALA);
-    }
-    return;
-  }
-
-  if(curentTemperature > setTemperature + toleransi && status_pemanas){
-    Serial.println("Mematikan pemanas");
-    digitalWrite(PEMANAS, MATI);
-  }else if(curentTemperature < setTemperature - toleransi && !status_pemanas){
-    Serial.println("Menyalakan pemanas");
-    digitalWrite(PEMANAS, NYALA);
-  }
+#endif
 }
 
 void kipas(bool status){
@@ -105,6 +55,7 @@ void kipas(bool status){
 void pemanas(bool status){
   if(status){
     Serial.println("Menyalakan pemanas");
+    kipas(true);
     digitalWrite(PEMANAS, NYALA);
     status_pemanas = true;
   }else{
@@ -114,8 +65,27 @@ void pemanas(bool status){
   }
 }
 
+void thermostat(){
+  read_sensors();
+
+  if(setTemperature == 0){
+    if(status_pemanas){
+      Serial.println("Mematikan pemanas");
+      digitalWrite(PEMANAS, NYALA);
+    }
+    return;
+  }
+
+  if(curentTemperature >= setTemperature + toleransi && status_pemanas){
+    // matikan pemanas
+    pemanas(false);
+  }else if(curentTemperature <= setTemperature - toleransi && !status_pemanas){
+    // nyalakan pemanas
+    pemanas(true);
+  }
+}
+
 String web_processor(const String& var){
-  
 
   if(var == "TEMPERATUR"){
     String temp = String(curentTemperature);
@@ -126,14 +96,10 @@ String web_processor(const String& var){
   }else if (var == "SET_TEMPERATURE"){
     String set_temp = String(setTemperature);
     return set_temp;
-  }else if(var == "KIPAS_ON"){
-    if(status_kipas){
-      return "selected";
-    }
-  }else if(var == "KIPAS_OFF"){
-    if(!status_kipas){
-      return "selected";
-    }
+  }else if(var == "KIPAS_ON" && status_kipas){
+    return "selected";
+  }else if(var == "KIPAS_OFF" && !status_kipas){
+    return "selected";
   }
   return String("");
 }
@@ -162,6 +128,23 @@ void web_setup(){
     request->send(200, "text/html", index_html, web_processor);
   });
 
+  server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request){
+    String response = "";
+    if(request->hasParam("var")){
+      String var = request->getParam("var")->value();
+      if(var == "temperatur"){
+        response = String(curentTemperature);
+      }else if(var =="kelembapan"){
+        response = String(curentHummidity);
+      }else if(var == "status_kipas"){
+        response = (status_kipas)?"ON":"OFF";
+      }else if(var == "status_pemanas"){
+        response = (status_pemanas)?"ON":"OFF";
+      }
+    }
+    request->send(200, response);
+  });
+
   server.onNotFound(notFound);
   server.begin();
   Serial.println("Server started!");
@@ -172,7 +155,9 @@ void web_setup(){
 
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(BAUD_RATE);
+  delay(100);
+  Serial.println();
   Serial.println();
   Serial.println("Memulai sistem...");
   pinMode(PIN_OUT1, OUTPUT);
@@ -186,14 +171,14 @@ void setup() {
   i2c_scanner();
   delay(100);
 
-  if(!shtc3.begin()){
+  if(! shtc3.begin()){
     shtc3_stat = false;
     Serial.println("Sensor error!");
   }
+  read_sensors();
 
   conect_wifi(WIFI_SSID,WIFI_PASSWORD, true);
   web_setup();
-  read_sensors();
   delay(100);
 
 }
@@ -202,13 +187,11 @@ unsigned long last_run = 0;
 void loop() {
   // put your main code here, to run repeatedly:
 
-  // test output
-  if(millis() >= last_run + 5000){
+  // Run program on interval
+  if(millis() >= last_run + RUN_INTERVAL){
     last_run = millis();
-    
-    Serial.println(millis());
     // if(shtc3_stat){
-      thermostat();
+    thermostat();
     // }
   }
 

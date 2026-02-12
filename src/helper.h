@@ -5,7 +5,7 @@
 #define AP_SSID "ESP AP"
 #endif
 
-bool conect_wifi(String ssid = "",String password = "", bool client = false){
+bool ICACHE_FLASH_ATTR conect_wifi(String ssid = "",String password = "", bool client = false){
   if(WiFi.status() == WL_CONNECTED){
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
@@ -66,8 +66,7 @@ bool conect_wifi(String ssid = "",String password = "", bool client = false){
   
 }
 
-
-String buat_token(int panjang = 20){
+String ICACHE_FLASH_ATTR buat_token(int panjang = 20){
   char karakter[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
   String letter;
   // randomSeed(analogRead(0));
@@ -77,3 +76,35 @@ String buat_token(int panjang = 20){
   return letter;
 }
 
+void ICACHE_FLASH_ATTR i2c_scanner(){
+  byte error, address;
+  int nDevices;
+  Serial.println("Scanning i2c devices...");
+  nDevices = 0;
+  for(address = 1; address < 127; address++ ) {
+    Wire.beginTransmission(address);
+    // Serial.println(address);
+    error = Wire.endTransmission();
+    if (error == 0) {
+      Serial.print("I2C device found at address 0x");
+      if (address<16) {
+        Serial.print("0");
+      }
+      Serial.println(address,HEX);
+      nDevices++;
+    }
+    else if (error==4) {
+      Serial.print("Unknow error at address 0x");
+      if (address<16) {
+        Serial.print("0");
+      }
+      Serial.println(address,HEX);
+    }    
+  }
+  if (nDevices == 0) {
+    Serial.println("No I2C devices found\n");
+  }
+  else {
+    Serial.println("done\n");
+  }
+}
