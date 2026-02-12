@@ -1,0 +1,79 @@
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
+
+#ifndef AP_SSID
+#define AP_SSID "ESP AP"
+#endif
+
+bool conect_wifi(String ssid = "",String password = "", bool client = false){
+  if(WiFi.status() == WL_CONNECTED){
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+    Serial.print("Memutuskan hubungan WIFI.");
+    int timeout1 = 0;
+    delay(100);
+    while (WiFi.status() == WL_CONNECTED)
+    {
+      Serial.print(".");
+      delay(1000);
+      timeout1++;
+    }
+    Serial.println();
+    
+  }
+  if(ssid == ""){
+    WiFi.mode(WIFI_AP);
+    Serial.println("WiFi diset ke mode Aksess point");
+    WiFi.softAP(AP_SSID);
+    Serial.print("SSID = ");
+    Serial.println(AP_SSID);
+  }else if (!client)
+  {
+    WiFi.mode(WIFI_AP);
+    Serial.println("WiFi diset ke mode Aksess point");
+    WiFi.softAP(ssid, password);
+    Serial.print("SSID     = ");
+    Serial.println(ssid);
+    Serial.print("Password = ");
+    Serial.println(password);
+  }else if (client && ssid != "")
+  {
+    WiFi.mode(WIFI_STA);
+    Serial.println("WiFi diset ke mode client");
+    Serial.print("Menyambungkan ke ");
+    Serial.print(ssid);
+    WiFi.begin(ssid,password);
+    int timeout = 0;
+    while (WiFi.status() != WL_CONNECTED && timeout <= 30)
+    {
+      Serial.print(".");
+      delay(1000);
+      timeout++;
+    }
+    Serial.println();
+    if(timeout >= 30 || WiFi.status() != WL_CONNECTED){
+      Serial.println("Koneksi WiFi gagal!\n(Timeout)");
+      return false;
+    }
+    if(WiFi.status() == WL_CONNECTED){
+      Serial.println("Terkoneksi!");
+      Serial.print("Alamat IP = ");
+      Serial.println(WiFi.localIP());
+    }
+  }
+  return true;
+  
+  
+}
+
+
+String buat_token(int panjang = 20){
+  char karakter[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
+  String letter;
+  // randomSeed(analogRead(0));
+  for(int i = 0; i < panjang; i++){
+    letter = letter + karakter[random(0,61)];
+  }
+  return letter;
+}
+
