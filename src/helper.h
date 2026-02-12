@@ -5,7 +5,7 @@
 #define AP_SSID "ESP AP"
 #endif
 
-bool ICACHE_FLASH_ATTR conect_wifi(String ssid = "",String password = "", bool client = false){
+bool ICACHE_FLASH_ATTR conect_wifi(String ssid = "",String password = "", bool client = false, bool fallback = true){
   if(WiFi.status() == WL_CONNECTED){
     WiFi.disconnect(true);
     WiFi.mode(WIFI_OFF);
@@ -25,14 +25,14 @@ bool ICACHE_FLASH_ATTR conect_wifi(String ssid = "",String password = "", bool c
     WiFi.mode(WIFI_AP);
     Serial.println("WiFi diset ke mode Aksess point");
     WiFi.softAP(AP_SSID);
-    Serial.print("SSID = ");
+    Serial.print("AP SSID = ");
     Serial.println(AP_SSID);
   }else if (!client)
   {
     WiFi.mode(WIFI_AP);
     Serial.println("WiFi diset ke mode Aksess point");
     WiFi.softAP(ssid, password);
-    Serial.print("SSID     = ");
+    Serial.print("AP SSID  = ");
     Serial.println(ssid);
     Serial.print("Password = ");
     Serial.println(password);
@@ -53,6 +53,14 @@ bool ICACHE_FLASH_ATTR conect_wifi(String ssid = "",String password = "", bool c
     Serial.println();
     if(timeout >= 30 || WiFi.status() != WL_CONNECTED){
       Serial.println("Koneksi WiFi gagal!\n(Timeout)");
+      if(fallback){
+        Serial.println("Mengaktifkan backup WiFi AP");
+        WiFi.softAP(AP_SSID);
+        Serial.print("AP SSID = ");
+        Serial.println(AP_SSID);
+        Serial.print("Alamat IP = ");
+        Serial.println(WiFi.softAPIP());
+      }
       return false;
     }
     if(WiFi.status() == WL_CONNECTED){

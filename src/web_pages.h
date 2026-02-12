@@ -22,7 +22,28 @@ static const char* index_html ICACHE_FLASH_ATTR = R"rawliteral(
         </select><br><br>
         <input type="submit" value="Submit">
     </form>
+    <a href="config">Configuration</a>
 </body>
 </html>
 )rawliteral";
 
+static const char* config_html ICACHE_FLASH_ATTR = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thermostat Control</title>
+</head>
+<body>
+    Configuration
+    <form method="post">
+        <label for="wifi_ssid">WiFi SSID : </label>
+        <input type="text" id="wifi_ssid" name="wifi_ssid" value="WIFI"><br>
+        <label for="wifi_pass">WiFi Password : </label>
+        <input type="text" id="wifi_pass" name="wifi_pass" value="WIFI PASSWORD"><br>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
+)rawliteral";

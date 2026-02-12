@@ -41,6 +41,9 @@ void read_sensors(){
 }
 
 void kipas(bool status){
+  if(status == status_kipas){
+    return;
+  }
   if(status){
     Serial.println("Menyalakan kipas.");
     digitalWrite(KIPAS, NYALA);
@@ -53,8 +56,12 @@ void kipas(bool status){
 }
 
 void pemanas(bool status){
+  if(status == status_pemanas){
+    return;
+  }
   if(status){
     Serial.println("Menyalakan pemanas");
+    
     kipas(true);
     digitalWrite(PEMANAS, NYALA);
     status_pemanas = true;
@@ -66,13 +73,9 @@ void pemanas(bool status){
 }
 
 void thermostat(){
-  read_sensors();
-
-  if(setTemperature == 0){
-    if(status_pemanas){
-      Serial.println("Mematikan pemanas");
-      digitalWrite(PEMANAS, NYALA);
-    }
+  // mematikan pemanas jika temperatur set ke 0
+  if(setTemperature == 0 && status_pemanas){
+    pemanas(false);
     return;
   }
 
@@ -109,15 +112,12 @@ void notFound(AsyncWebServerRequest *request) {
 }
 
 void web_setup(){
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(200, "text/html", index_html, web_processor);
-  });
 
-  server.on("/", HTTP_POST, [](AsyncWebServerRequest *request){
-    Serial.println("POST REQUESTED!!");
+  server.on("/", HTTP_ANY, [](AsyncWebServerRequest *request){
+    // Serial.println("POST REQUESTED!!");
     if(request->hasParam("temp", true)){
       String input = request->getParam("temp",true)->value();
-      Serial.print("Received temperature: ");
+      Serial.print("Temperature set to ");
       Serial.println(input);
       setTemperature = input.toFloat();
     }
@@ -126,6 +126,10 @@ void web_setup(){
       kipas(status_kipas);
     }
     request->send(200, "text/html", index_html, web_processor);
+  });
+
+  server.on("/config", HTTP_ANY, [](AsyncWebServerRequest *request){
+    request->send(200, "text/html", config_html, web_processor);
   });
 
   server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -142,7 +146,7 @@ void web_setup(){
         response = (status_pemanas)?"ON":"OFF";
       }
     }
-    request->send(200, response);
+    request->send(200,"text/html", response);
   });
 
   server.onNotFound(notFound);
@@ -190,7 +194,10 @@ void loop() {
   // Run program on interval
   if(millis() >= last_run + RUN_INTERVAL){
     last_run = millis();
+    // baca sensor
+    read_sensors();
     // if(shtc3_stat){
+    // run logic termostart
     thermostat();
     // }
   }
