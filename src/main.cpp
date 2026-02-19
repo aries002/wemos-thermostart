@@ -63,6 +63,7 @@ void pemanas(bool status){
     Serial.println("Menyalakan pemanas");
     
     kipas(true);
+    delay(1000);
     digitalWrite(PEMANAS, NYALA);
     status_pemanas = true;
   }else{
@@ -76,6 +77,8 @@ void thermostat(){
   // mematikan pemanas jika temperatur set ke 0
   if(setTemperature == 0 && status_pemanas){
     pemanas(false);
+    delay(5000);
+    kipas(false);
     return;
   }
 
@@ -122,8 +125,10 @@ void web_setup(){
       setTemperature = input.toFloat();
     }
     if(request->hasParam("fan", true)){
-      status_kipas = (request->getParam("fan",true)->value() == "on")?true:false;
-      kipas(status_kipas);
+      bool status = (request->getParam("fan",true)->value() == "on")?true:false;
+      Serial.print("Kipas set to ");
+      Serial.println(status);
+      kipas(status);
     }
     request->send(200, "text/html", index_html, web_processor);
   });
