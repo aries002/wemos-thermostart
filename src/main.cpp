@@ -15,6 +15,9 @@ float curentTemperature = 0;
 float curentHummidity = 0;
 bool status_kipas = false;
 bool status_pemanas = false;
+unsigned long timer = 0;
+int setMenit;
+
 Adafruit_SHTC3 shtc3 = Adafruit_SHTC3();
 
 
@@ -73,7 +76,27 @@ void pemanas(bool status){
   }
 }
 
+
+
+void set_timer(int menit){
+  Serial.print("Timer diset ke ");
+  Serial.print(menit);
+  Serial.println(" menit");
+  setMenit = menit;
+  // set timer
+  timer = menit * 60 * 1000;
+  // start timer
+  timer = timer + millis();
+}
+
 void thermostat(){
+  // cek timer
+  if(millis() >= timer && timer != 0){
+    Serial.println("Timer selesai");
+    setMenit = 0;
+    timer = 0;
+    setTemperature = 0;
+  }
   // mematikan pemanas jika temperatur set ke 0
   if(setTemperature == 0 && status_pemanas){
     pemanas(false);
@@ -106,6 +129,9 @@ String web_processor(const String& var){
     return "selected";
   }else if(var == "KIPAS_OFF" && !status_kipas){
     return "selected";
+  }else if(var == "TIMER"){
+    String Menit = String(setMenit);
+    return Menit;
   }
   return String("");
 }
@@ -129,6 +155,11 @@ void web_setup(){
       Serial.print("Kipas set to ");
       Serial.println(status);
       kipas(status);
+    }
+    if(request->hasParam("timer", true)){
+      String input = request->getParam("timer",true)->value();
+      int tmp = input.toInt();
+      set_timer(tmp);
     }
     request->send(200, "text/html", index_html, web_processor);
   });
